@@ -73,3 +73,7 @@ $lightPink: #ce6799;
 $primaryColor: #ce6799;
 
 ```
+
+---
+
+Credits: this guide is based on [Primer SCSS Principles](https://primer.style/css/principles/scss) + our own changes according to principles we use in our company

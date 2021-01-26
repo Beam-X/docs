@@ -148,3 +148,7 @@ It's important to use a propoer input type cause it affects keyboard which will 
     <img src="logo.png" alt="image description" />
   </picture>
   ```
+
+---
+
+Credits: this guide is based on [Primer HTML Principles](https://primer.style/css/principles/html) + our own changes according to principles we use in our company
