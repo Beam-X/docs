@@ -1,4 +1,4 @@
-<!-- _navbar.md -->
+<!-- _sidebar.md -->
 
 * **Style Guides**
 * [React](react-styleguide.md)
