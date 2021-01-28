@@ -17,11 +17,13 @@ This style guide is mostly based on the standards that are currently prevalent i
 9. [Props](#props)
 10. [Refs](#refs)
 11. [Parentheses](#parentheses)
-12. [Tags](#tags)
-13. [Methods](#methods)
-14. [Ordering](#ordering)
-15. [isMounted](#ismounted)
-16. [Legacy](#legacy)
+12. [Conditional Rendering](#conditional_rendering)
+13. [Final Commas](#final_commas)
+14. [Tags](#tags)
+15. [Methods](#methods)
+16. [Ordering](#ordering)
+17. [isMounted](#ismounted)
+18. [Legacy](#legacy)
 
 ## Basic Rules
 
@@ -208,6 +210,34 @@ Always use single quotes (') both for JS and JSX
   <Foo bar={baz} />
   ```
 
+- Use spacing in `if..else` statements
+
+  ```javascript
+  // bad
+  if(condition) {
+  }
+
+  // bad
+  if(condition){
+  }
+
+  // good
+  if (condition) {
+  }
+  ```
+
+- Use spacing for methods
+  
+  ```javascript
+  // bad
+  onClick=(object)=>{
+  }
+
+  // good
+  onClick = (object) => {
+  }
+  ```
+
 ## Props
 
 - Always use camelCase for prop names.
@@ -375,6 +405,94 @@ render() {
   const body = <div>hello</div>;
   return <MyComponent>{body}</MyComponent>;
 }
+```
+
+## Conditional Rendering
+
+- Use ternary operators for conditional rendering.
+  
+  ```javascript
+  // bad 
+  {isAuthorized && <button>Logout</button>}
+
+  // good
+  {isAuthorized ? <button>Logout</button> : null}
+  ```
+
+- Avoid nested conditions
+
+  ```javascript
+  // bad
+  if (conditionA) {
+    if (conditionB) {
+    
+    } else {
+    
+    }
+  } else {
+  
+  }
+
+  // good
+  if (conditionA) {
+
+  } else if (conditionB) {
+
+  } else if (conditionC) {
+
+  } else {
+
+  }
+  ```
+
+- Avoid complex logic in condition, use boolean const in conditions.
+  If your logic in condition statement because too heavy then it's better to take it out to a boolean const
+
+  <!-- TODO: Add a better example -->
+  ```javascript
+  // bad
+  if (conditionA && conditionB > 50 && conditionC < conditionD) {
+  }
+
+  // good
+  const conditionB1 = conditionB > 50
+  const conditionC1 = conditionC < conditionD
+  if (conditionA && conditionB1 && conditionC1) {
+
+  }
+
+  ```
+
+## Final Commas
+
+Always add final commas for object/array elements
+> Why? TLDR; Less diff count, less breaks of missed comma when add new item
+
+```javascript
+// bad
+[
+  {
+    one,
+    two
+  },
+  {
+    one,
+    two
+  }
+]
+
+
+// good
+[
+  {
+    one,
+    two,
+  },
+  {
+    one,
+    two,
+  },
+]
 ```
 
 ## Tags

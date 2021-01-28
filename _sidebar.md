@@ -13,6 +13,8 @@
   * [Props](#props)
   * [Refs](#refs)
   * [Parentheses](#parentheses)
+  * [Conditional Rendering](#conditional_rendering)
+  * [Final Commas](#final_commas)
   * [Tags](#tags)
   * [Methods](#methods)
   * [Ordering](#ordering)
