@@ -33,6 +33,9 @@ Use single quotes for basic strings without special symbols. Use double quotes f
 "Hello Michael!"
 
 # Good
+'Hello Michael!'
+
+# Good
 "Hello Michael! How you're doing?"
 
 # Good
