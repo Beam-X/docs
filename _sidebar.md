@@ -1,6 +1,7 @@
 <!-- _sidebar.md -->
 
 * **Style Guides**
+* [Ruby](ruby-styleguide.md)
 * [React](react-styleguide.md)
   * [Basic Rules](#basicrules)
   * [Class vs React.createClass vs stateless](#classvsreactcreateclassvsstateless)
