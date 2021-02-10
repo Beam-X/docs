@@ -42,3 +42,31 @@ Use single quotes for basic strings without special symbols. Use double quotes f
 name = "Michael"
 "Hello #{name}!"
 ```
+
+## Arrays
+
+Use `%w[]` for non-single element strings arrays.
+
+```ruby
+# Bad
+['a', 'b', 'c']
+
+# Good
+%w[a b c]
+
+# Good (for single element arrays)
+['a']
+```
+
+Use `%i[]` for non-single element symbols arrays.
+
+```ruby
+# Bad
+[:a, :b, :c]
+
+# Good
+%i[a b c]
+
+# Good (for single element arrays)
+[:a]
+```
