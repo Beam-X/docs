@@ -4,6 +4,7 @@
 4. [How to create comments system](#how-to-create-comments-system)
 5. [How to implement FB sign up](#how-to-implement-fb-sign-up)
 6. [How to implement Google sign up](#how-to-implement-google-sign-up)
+7. [How to set up email notifications with SendGrid](#how-to-set-up-email-notifications-with-sendgrid)
 
 ## How to set up CORS for a new project
 
@@ -439,4 +440,30 @@ post 'google' do
   attrs = declared(params, include_missing: false).to_h.symbolize_keys
   AuthService.new(attrs).google
 end
+```
+
+## How to set up email notifications with SendGrid
+
+1. Set default from value in app/mailers/application_mailer.rb:
+```ruby
+default from: 'no-reply@email_host.com'
+```
+
+2. Add sendgrid_api_key to application's credentials.
+
+3. Call a sendgrid_api_key in config/initializers/setup_mail.rb:
+```ruby
+api_key = Rails.application.credentials[:sendgrid_api_key]
+```
+
+4. Configure smtp_settings in config/initializers/setup_mail.rb:
+```ruby
+ActionMailer::Base.smtp_settings = {
+  address: 'smtp.sendgrid.net',
+  port: '587',
+  authentication: :plain,
+  user_name: 'apikey',
+  password: api_key,
+  enable_starttls_auto: true
+}
 ```

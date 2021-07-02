@@ -39,3 +39,4 @@
   * [How to create comments system](#how-to-create-comments-system)
   * [How to implement FB sign up](#how-to-implement-fb-sign-up)
   * [How to implement Google sign up](#how-to-implement-google-sign-up)
+  * [How to set up email notifications with SendGrid](#how-to-set-up-email-notifications-with-sendgrid)
