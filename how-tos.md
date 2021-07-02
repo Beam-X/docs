@@ -5,6 +5,7 @@
 5. [How to implement FB sign up](#how-to-implement-fb-sign-up)
 6. [How to implement Google sign up](#how-to-implement-google-sign-up)
 7. [How to set up email notifications with SendGrid](#how-to-set-up-email-notifications-with-sendgrid)
+8. [How To set up file uploads with AWS](#how-to-set-up-file-uploads-with-aws)
 
 ## How to set up CORS for a new project
 
@@ -466,4 +467,87 @@ ActionMailer::Base.smtp_settings = {
   password: api_key,
   enable_starttls_auto: true
 }
+```
+
+## How To set up file uploads with AWS
+
+1. Add carrierwave, mini_magick and fog-aws to Gemfile:
+```ruby
+# Files uploading/storing
+gem 'carrierwave'
+
+# ImageMagick for Carrierwave
+gem 'mini_magick'
+
+# S3 files storing
+gem 'fog-aws'
+```
+
+2. Add base CarrierWave uploader (app/uploaders/base_uploader.rb):
+```ruby
+class BaseUploader < CarrierWave::Uploader::Base
+end
+```
+
+3. Add store_dir method to BaseUploader. It will determine the path to the uploaded file:
+```ruby
+"uploads/#{model.class.to_s.underscore}/#{mounted_as}/#{model.id}"
+```
+
+4. Create config/initializers/carrierwave.rb file. Configure carrierwave for test and development environments:
+
+```ruby
+CarrierWave.configure do |config|
+
+  config.enable_processing = true
+
+  if Rails.env.development? || Rails.env.test?
+    config.storage = :file
+    config.asset_host = ActionController::Base.asset_host
+    config.cache_dir = "#{Rails.root}/public/uploads/tmp"
+  end
+end
+```
+
+5. Provide fog storage for production base_uploader:
+```ruby
+if Rails.env.development? || Rails.env.test?
+  storage :file
+else
+  storage :fog
+end
+```
+
+6. Add CLIENT_ADDRESS, SERVER_ADDRESS and S3_BUCKET to config/application.yml
+
+7. Add S3_BUCKET to required_keys (config/initializers/figaro.rb):
+```ruby
+required_keys += %w[
+  ...
+  S3_BUCKET
+  ...
+]
+```
+
+8. Add s3, access_key_id and secret_access_key to application's credentials;
+
+9. Provide carrierwave settings for production (config/initializers/carrierwave.rb):
+```ruby
+if Rails.env.development? || Rails.env.test?
+  ...
+else
+  credentials = Rails.application.credentials[:s3] || {}
+  config.cache_dir = "#{Rails.root}/tmp/uploads"
+  config.fog_provider = 'fog/aws'
+  config.fog_credentials = {
+    provider: 'AWS',
+    aws_access_key_id: credentials[:access_key_id],
+    aws_secret_access_key: credentials[:secret_access_key],
+    region: 'ap-southeast-1',
+    endpoint: 'https://s3-ap-southeast-1.amazonaws.com'
+  }
+  config.fog_directory = ENV['S3_BUCKET']
+  config.fog_public = true
+  config.fog_attributes = { cache_control: "public, max-age=#{365.day.to_i}" }
+end
 ```
