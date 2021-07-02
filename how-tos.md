@@ -6,6 +6,7 @@
 6. [How to implement Google sign up](#how-to-implement-google-sign-up)
 7. [How to set up email notifications with SendGrid](#how-to-set-up-email-notifications-with-sendgrid)
 8. [How To set up file uploads with AWS](#how-to-set-up-file-uploads-with-aws)
+9. [How to set up 2FA authorization with Twilio](#how-to-set-up-2fa-authorization-with-Twilio)
 
 ## How to set up CORS for a new project
 
@@ -549,5 +550,211 @@ else
   config.fog_directory = ENV['S3_BUCKET']
   config.fog_public = true
   config.fog_attributes = { cache_control: "public, max-age=#{365.day.to_i}" }
+end
+```
+## How to set up 2FA authorization with Twilio
+
+1. Add twilio-ruby gem to Gemfile:
+```ruby
+# Twilio wrapper
+gem 'twilio-ruby'
+```
+
+2. Add SMS acronym to config/initializers/inflections.rb:
+```ruby
+inflect.acronym 'SMS'
+```
+
+3. Add twilio credentials (account_sid, auth_token, sender_number) to application's credentials:
+
+4. Add two_fa, two_fa_token, sms_code, sms_code_sent_at and phone columns to users table:
+```ruby
+class AddTwoFaToUsers < ActiveRecord::Migration[6.0]
+  def change
+    add_column :users, :two_fa, :boolean, default: false, null: false
+    add_column :users, :two_fa_token, :string, unique: true, index: true
+    add_column :users, :sms_code, :string
+    add_column :users, :sms_code_sent_at, :datetime
+    add_column :users, :phone, :string, unique: true
+  end
+end
+```
+
+5. Create TwilioService. Initialize account_sid and auth_token there:
+```ruby
+class TwilioService
+
+  def initialize
+    twilio_credentials = Rails.application.credentials[:twilio]
+    @account_sid = twilio_credentials[:account_sid]
+    @auth_token = twilio_credentials[:auth_token]
+  end
+
+end
+```
+
+6. Add Twilio client initialization to TwilioService:
+```ruby
+def client
+  Twilio::REST::Client.new(@account_sid, @auth_token)
+end
+```
+
+7. Add send_sms method to TwilioService. Initialize sender_number there:
+```ruby
+def send_sms
+  sender_number = Rails.application.credentials[:twilio][:sender_number]
+end
+```
+
+8. Create new messages through the Twilio client. Also add body and phone params to the send_sms method:
+```ruby
+def send_sms(body, phone)
+  ...
+
+  client.messages.create(
+    from: sender_number,
+    to: phone,
+    body: body
+  )
+end
+```
+
+9. Handle Twilio error during message sending:
+```ruby
+begin
+  client.messages.create(
+    from: sender_number,
+    to: phone,
+    body: body
+  )
+rescue Twilio::REST::RestError => error
+  puts "Message '#{body}' can't be send to #{phone}!\n#{error}"
+end
+```
+
+10. Create SMSAuthCodeWorker. It will send Twilio messages:
+```ruby
+class SMSAuthCodeWorker
+
+  include Sidekiq::Worker
+
+  sidekiq_options queue: 'low'
+
+end
+```
+
+11. Add perform method to send Twilio messages:
+```ruby
+def perform(user_id)
+  user = User.find(user_id)
+  TwilioService.new.send_sms("Code: #{user.sms_code}", user.phone)
+end
+```
+
+12. Create change_2fa method in order to check phone presence:
+```ruby
+validate :change_2fa, on: :update
+
+def change_2fa
+  if phone.blank? && will_save_change_to_attribute?(:two_fa, from: false, to: true)
+    errors.add(:two_fa, 'Need to have telephone number')
+  end
+end
+```
+
+13. Create TwoFactorAuthentication service. Add send_2fa_code method. It will generate two_fa_token and sms_code and send it to user:
+```ruby
+module Auth
+  module TwoFactorAuthentication
+
+    extend ActiveSupport::Concern
+
+    def send_2fa_code(user)
+      two_fa_token = SecureRandom.hex(32)
+      user.update_columns(
+        two_fa_token: two_fa_token,
+        sms_code: rand(999..9999),
+        sms_code_sent_at: Time.now
+      )
+
+      SMSAuthCodeWorker.perform_async(user.id)
+      two_fa_token
+    end
+
+  end
+end
+```
+
+14. Add private sms_code_expired method to TwoFactorAuthentication service. Code has expired if it was sent more than 2 minutes ago:
+```ruby
+private
+
+def sms_code_expired?(user)
+  user.sms_code_sent_at && user.sms_code_sent_at < 2.minutes.ago
+end
+```
+
+15. Add confirm_2fa method to TwoFactorAuthentication service. Find user by sms_code and two_fa_token. Raise exception if the user is blank or sms_code has expired:
+```ruby
+def confirm_2fa
+  user = User.find_by(sms_code: @sms_code, two_fa_token: @two_fa_token)
+  if user.blank?
+    raise CustomException.new(sms_code: 'Code is incorrect')
+  elsif sms_code_expired?(user)
+    raise CustomException.new(sms_code: 'Code is expired')
+  end
+end
+```
+
+Otherwise, authorize user:
+```ruby
+def confirm_2fa
+  ...
+  if user.blank?
+    ...
+  else
+    user.update_columns(two_fa_token: nil, sms_code_sent_at: nil, sms_code: nil)
+    user.update_tracked_fields!(@remote_ip)
+    authorize(user.id)
+  end
+end
+```
+
+16. Add confirm_2fa params to auth helper:
+```ruby
+requires :sms_code, type: String
+requires :two_fa_token, type: String
+```
+
+And add this params to AuthService initialize:
+```ruby
+def initialize(params = {})
+  ...
+  @two_fa_token = params[:two_fa_token]
+  @sms_code = params[:sms_code]
+end
+```
+
+17. Add confirm_2fa endpoint:
+```ruby
+desc 'Confirm 2FA by SMS code'
+params do
+  use :confirm_2fa
+end
+post 'confirm_2fa', root: false do
+  attrs = declared(params).to_h.symbolize_keys
+  attrs[:remote_ip] = remote_ip
+  AuthService.new(attrs).confirm_2fa
+end
+```
+
+18. Check two_fa flag and send_2fa_code before login:
+```ruby
+if user.two_fa
+  send_2fa_code(user)
+else
+  user.update_tracked_fields!(remote_ip)
+  authorize(user.id)
 end
 ```

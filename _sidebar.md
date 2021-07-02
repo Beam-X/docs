@@ -41,3 +41,4 @@
   * [How to implement Google sign up](#how-to-implement-google-sign-up)
   * [How to set up email notifications with SendGrid](#how-to-set-up-email-notifications-with-sendgrid)
   * [How To set up file uploads with AWS](#how-to-set-up-file-uploads-with-aws)
+  * [How to set up 2FA authorization with Twilio](#how-to-set-up-2fa-authorization-with-Twilio)
