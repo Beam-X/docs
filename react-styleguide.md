@@ -34,6 +34,9 @@ However, multiple [Stateless, or Pure, Components](https://facebook.github.io/re
 
 Always use classes over hooks.
 
+Always use functional or PureComponent for simple components.
+> When to use PureComponents? Component State/Props is an immutable object; A state don't have a multi-level nested object; Props don't have multi-level nested object.
+
 Always use arrow functions.
 
 Use PascalCase for components naming.
@@ -564,6 +567,43 @@ Always add final commas for object/array elements
 
   // good
   <div onClick={() => {this.onClickDiv}} />
+  ```
+
+- Avoiding Inline Function Definition in the Render Function [Performance Tip]
+
+  > Why? As far as functions are objects in JavaScript the inline function will always fail the prop diff when React does a diff check. Also, an arrow function will create a new instance of the function on every render if it’s used in a JSX property. This will create a lot of work for the garbage collector.
+
+  ```javascript
+  // bad
+  export default class ItemsList extends React.Component {
+    state = {
+      item: [],
+      selectedItemId: null
+    }
+    render(){
+      const { items } = this.state;
+      return (
+        items.map(item => <Item key={item.id} onClick={() => this.setState({selectedItemId: item.id})} />
+      )
+    }
+  }
+
+  // good
+  export default class ItemsList extends React.Component {
+    state = {
+      item: [],
+      selectedItemId: null
+    }
+    handleItemSelect = (id) => {
+      this.setState({selectedItemId: id})
+    }
+    render(){
+      const { items } = this.state;
+      return (
+        items.map(item => <Item key={item.id} onClick={this.handleItemSelect} />
+      )
+    }
+  }
   ```
 
 - Do not use underscore prefix for internal methods of a React component.
